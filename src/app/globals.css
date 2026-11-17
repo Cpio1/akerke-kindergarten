@@ -1,0 +1,269 @@
+@import "tailwindcss";
+
+/* Только светлая тема: вариант `dark:` не срабатывает никогда */
+@custom-variant dark (&:where(.never-dark, .never-dark *));
+
+@theme {
+  --font-sans: var(--font-nunito), "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-comfortaa), var(--font-nunito), system-ui, sans-serif;
+  --font-hand: var(--font-caveat), var(--font-nunito), cursive;
+
+  --color-ink: #2b2a3a;
+  --color-ink-soft: #5d5a6e;
+  --color-line: #efe2c9;
+
+  --color-cream: #fff8ec;
+  --color-cream-deep: #fbefd9;
+  --color-paper: #fffdf8;
+
+  --color-sky: #d7ecff;
+  --color-sky-mid: #a9d3f7;
+  --color-sky-deep: #3d8fd1;
+  --color-sky-ink: #1d5a8f;
+
+  --color-sun: #ffd45c;
+  --color-sun-soft: #fff1c2;
+  --color-sun-deep: #e9a300;
+  --color-sun-ink: #8a5a00;
+
+  --color-coral: #ff8f7e;
+  --color-coral-soft: #ffe3dc;
+  --color-coral-deep: #e85a4a;
+  --color-coral-ink: #a8382c;
+
+  --color-leaf: #c4eabb;
+  --color-leaf-soft: #e8f7e3;
+  --color-leaf-deep: #3ea36a;
+  --color-leaf-ink: #22704a;
+
+  --color-lav: #e4dcff;
+  --color-lav-soft: #f2eeff;
+  --color-lav-deep: #7c62d8;
+  --color-lav-ink: #523ca8;
+
+  --color-wa: #25d366;
+  --color-wa-deep: #128c4b;
+
+  --radius-blob: 42% 58% 55% 45% / 48% 42% 58% 52%;
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-drift: drift 22s ease-in-out infinite;
+  --animate-twinkle: twinkle 3.2s ease-in-out infinite;
+  --animate-spin-slow: spin 40s linear infinite;
+  --animate-sway: sway 5s ease-in-out infinite;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(var(--r, 0deg));
+    }
+    50% {
+      transform: translateY(-7px) rotate(var(--r, 0deg));
+    }
+  }
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(14px);
+    }
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(0.82) rotate(18deg);
+      opacity: 0.7;
+    }
+  }
+  @keyframes sway {
+    0%,
+    100% {
+      transform: rotate(-5deg);
+    }
+    50% {
+      transform: rotate(5deg);
+    }
+  }
+}
+
+/* ---------- База ---------- */
+:root {
+  color-scheme: only light;
+  /* Высота шапки (фиксированная) и вертикальный отступ секций */
+  --header-h: 64px;
+  --section-pad: clamp(52px, 7vw, 96px);
+}
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 84px;
+  }
+}
+
+html {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: clip;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Якоря: секция прокручивается так, чтобы её заголовок оказался
+ * ровно на 20px ниже фиксированной шапки (учитывается верхний отступ секции).
+ */
+.section[id] {
+  scroll-margin-top: calc(var(--header-h) + 20px - var(--section-pad));
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+  /* Никаких принудительных заглавных — казахские буквы остаются как написаны */
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: var(--color-sun);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-sky-deep);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+img,
+svg,
+video,
+iframe {
+  max-width: 100%;
+}
+
+/* ---------- Раскладка ---------- */
+@utility container-x {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: 16px;
+  @media (min-width: 640px) {
+    padding-inline: 24px;
+  }
+  @media (min-width: 1024px) {
+    padding-inline: 32px;
+  }
+}
+
+.section {
+  position: relative;
+  overflow: clip;
+  padding-block: var(--section-pad);
+}
+
+/* Цветная «бумажная» подложка с точками */
+.dots-bg {
+  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 9%, transparent) 1.2px, transparent 1.3px);
+  background-size: 22px 22px;
+}
+
+/* Клетчатая скатерть для раздела питания */
+.gingham {
+  background-color: var(--color-coral-soft);
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-coral) 22%, transparent) 50%, transparent 50%),
+    linear-gradient(color-mix(in srgb, var(--color-coral) 22%, transparent) 50%, transparent 50%);
+  background-size: 28px 28px;
+}
+
+/* Волнистый край секции */
+.wave-top {
+  position: absolute;
+  inset-inline: 0;
+  top: -1px;
+  height: 18px;
+  pointer-events: none;
+}
+
+/* Рукописная подчёркивающая линия под словом */
+.mark {
+  position: relative;
+  white-space: nowrap;
+  z-index: 0;
+}
+.mark::after {
+  content: "";
+  position: absolute;
+  left: -0.08em;
+  right: -0.08em;
+  bottom: 0.02em;
+  height: 0.42em;
+  z-index: -1;
+  border-radius: 999px 40% 999px 30%;
+  background: var(--color-sun);
+  transform: rotate(-1.2deg);
+}
+
+/* ---------- Появление при прокрутке ---------- */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--d, 0ms);
+}
+.js .reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Доступность: меньше движения ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Скрытие полосы прокрутки у мобильной ленты галереи */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
