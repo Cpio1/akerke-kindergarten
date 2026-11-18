@@ -11,14 +11,43 @@ import { InstagramIcon } from "@/components/ui/BrandIcons";
 import { Cloud, Deco, Flower, Sparkle, Star } from "@/components/decor/Shapes";
 
 type Item = { kind: "photo"; photo: Photo } | { kind: "video"; video: Video };
+type Shape = "wide" | "tall";
 
-const items: Item[] = [
+const isWide = (item: Item) => item.kind === "photo" && item.photo.width / item.photo.height >= 1.15;
+
+/**
+ * Bento-раскладка для десктопа: сетка 6 колонок, блоки по 9 фото
+ *   [ш ш][в][в][ш ш]
+ *   [в][в][ш ш][в][в]
+ * ш — горизонтальное фото 2×2, в — вертикальное 1×2. Блок заполняет 6×4 ячейки без пустот.
+ * Фото раскладываются по форме, чтобы обрезка была минимальной.
+ */
+const PATTERN: Shape[] = ["wide", "tall", "tall", "wide", "tall", "tall", "wide", "tall", "tall"];
+
+function arrange(list: Item[]): { item: Item; shape: Shape }[] {
+  const wide = list.filter(isWide);
+  const tall = list.filter((i) => !isWide(i));
+  const out: { item: Item; shape: Shape }[] = [];
+  let k = 0;
+  while (wide.length || tall.length) {
+    const shape = PATTERN[k % PATTERN.length];
+    const item = (shape === "wide" ? wide.shift() ?? tall.shift() : tall.shift() ?? wide.shift()) as Item;
+    out.push({ item, shape });
+    k++;
+  }
+  return out;
+}
+
+const tiles = arrange([
   ...(heroVideo ? [{ kind: "video" as const, video: heroVideo }] : []),
   ...galleryPhotos.map((photo) => ({ kind: "photo" as const, photo })),
-];
+]);
+/** Порядок просмотра в лайтбоксе и на телефоне совпадает с порядком мозаики. */
+const items: Item[] = tiles.map((t) => t.item);
 
-/** Десктоп: крупное фото 2×2 + 4 маленьких = ровно два ряда; остальное — по кнопке. */
-const DESKTOP_LIMIT = 5;
+/** Десктоп: один полный блок (9 фото), остальное — по кнопке. Планшет: 6 фото. */
+const DESKTOP_LIMIT = PATTERN.length;
+const TABLET_LIMIT = 6;
 
 export function Gallery() {
   const t = useT();
@@ -36,7 +65,25 @@ export function Gallery() {
     requestAnimationFrame(() => opener.current?.focus());
   }, []);
 
-  const visible = expanded ? items : items.slice(0, DESKTOP_LIMIT);
+  // полные блоки по 9 — без пустых ячеек; «хвост» показывается отдельным рядом
+  const fullBlocks = Math.floor(tiles.length / PATTERN.length) * PATTERN.length;
+  const desktopTiles = expanded ? tiles.slice(0, Math.max(fullBlocks, DESKTOP_LIMIT)) : tiles.slice(0, DESKTOP_LIMIT);
+  const desktopTail = expanded ? tiles.slice(Math.max(fullBlocks, DESKTOP_LIMIT)) : [];
+  const tabletTiles = expanded ? tiles : tiles.slice(0, TABLET_LIMIT);
+
+  const moreButton = (limit: number, className: string) =>
+    items.length > limit ? (
+      <div className={`mt-5 justify-center ${className}`}>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="h-12 rounded-full border-2 border-ink/10 bg-white px-6 font-bold text-ink transition-colors hover:border-sun hover:bg-sun-soft"
+        >
+          {expanded ? g.showLess : `${g.showMore} (${items.length - limit})`}
+        </button>
+      </div>
+    ) : null;
 
   return (
     <section id="gallery" aria-labelledby="gallery-title" className="section bg-paper">
@@ -54,33 +101,46 @@ export function Gallery() {
           <EmptyGallery />
         ) : (
           <>
-            {/* Мобильная лента со свайпом */}
+            {/* Телефон: лента со свайпом */}
             <MobileStrip onOpen={open} />
 
-            {/* Десктоп/планшет: компактная мозаика */}
-            <ul className="mt-9 hidden auto-rows-[clamp(130px,14vw,196px)] grid-cols-4 gap-3 md:grid lg:gap-4">
-              {visible.map((item, i) => (
-                <li
-                  key={tileKey(item)}
-                  className={`reveal ${i === 0 ? "col-span-2 row-span-2" : ""}`}
-                  style={{ ["--d" as string]: `${(i % 5) * 60}ms` }}
-                >
-                  <Tile item={item} index={i} onOpen={open(i)} big={i === 0} />
+            {/* Планшет: аккуратная сетка 3 колонки */}
+            <ul data-float-avoid className="mt-8 hidden grid-cols-3 gap-3 md:grid lg:hidden">
+              {tabletTiles.map(({ item }, i) => (
+                <li key={tileKey(item)} className="reveal aspect-[4/5]" style={{ ["--d" as string]: `${(i % 3) * 60}ms` }}>
+                  <Tile item={item} index={i} onOpen={open(i)} size="(min-width: 768px) 240px, 33vw" />
                 </li>
               ))}
             </ul>
-            {items.length > DESKTOP_LIMIT ? (
-              <div className="mt-5 hidden justify-center md:flex">
-                <button
-                  type="button"
-                  onClick={() => setExpanded((v) => !v)}
-                  aria-expanded={expanded}
-                  className="h-12 rounded-full border-2 border-ink/10 bg-white px-6 font-bold text-ink transition-colors hover:border-sun hover:bg-sun-soft"
+            {moreButton(TABLET_LIMIT, "hidden md:flex lg:hidden")}
+
+            {/* Десктоп: bento-мозаика */}
+            <ul data-float-avoid className="mt-7 hidden auto-rows-[clamp(88px,min(7.8vw,calc((100svh_-_320px)_/_4)),112px)] grid-cols-6 gap-3 lg:grid xl:gap-4">
+              {desktopTiles.map(({ item, shape }, i) => (
+                <li
+                  key={tileKey(item)}
+                  className={`reveal ${shape === "wide" ? "col-span-2 row-span-2" : "row-span-2"}`}
+                  style={{ ["--d" as string]: `${(i % 9) * 50}ms` }}
                 >
-                  {expanded ? g.showLess : `${g.showMore} (${items.length - DESKTOP_LIMIT})`}
-                </button>
-              </div>
-            ) : null}
+                  <Tile
+                    item={item}
+                    index={i}
+                    onOpen={open(i)}
+                    wide={shape === "wide"}
+                    size={shape === "wide" ? "(min-width: 1240px) 400px, 32vw" : "(min-width: 1240px) 200px, 16vw"}
+                  />
+                </li>
+              ))}
+              {desktopTail.map(({ item }, j) => {
+                const i = desktopTiles.length + j;
+                return (
+                  <li key={tileKey(item)} className="reveal row-span-2">
+                    <Tile item={item} index={i} onOpen={open(i)} size="(min-width: 1240px) 200px, 16vw" />
+                  </li>
+                );
+              })}
+            </ul>
+            {moreButton(DESKTOP_LIMIT, "hidden lg:flex")}
           </>
         )}
       </div>
@@ -98,12 +158,14 @@ function Tile({
   item,
   index,
   onOpen,
-  big,
+  size,
+  wide = false,
 }: {
   item: Item;
   index: number;
   onOpen: (e: React.MouseEvent<HTMLElement>) => void;
-  big: boolean;
+  size: string;
+  wide?: boolean;
 }) {
   const t = useT();
   const [lang] = useLang();
@@ -116,7 +178,9 @@ function Tile({
       type="button"
       onClick={onOpen}
       aria-label={`${t.gallery.open}: ${label}`}
-      className="group relative block h-full w-full overflow-hidden rounded-[22px] bg-cream-deep ring-4 ring-white shadow-[0_10px_24px_-16px_rgba(43,42,58,0.45)] transition-transform duration-300 hover:-translate-y-1"
+      className={`group relative block h-full w-full overflow-hidden bg-cream-deep ring-4 ring-white shadow-[0_12px_26px_-18px_rgba(43,42,58,0.55)] transition-transform duration-300 hover:-translate-y-1 hover:rotate-[-0.6deg] ${
+        wide ? "rounded-[28px]" : "rounded-[22px]"
+      }`}
     >
       {item.kind === "photo" ? (
         <Image
@@ -124,14 +188,24 @@ function Tile({
           alt={label}
           fill
           quality={70}
-          sizes={big ? "(min-width: 1240px) 600px, 50vw" : "(min-width: 1240px) 300px, 25vw"}
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          sizes={size}
+          className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
         />
       ) : (
         <VideoPoster video={item.video} fill />
       )}
-      <span className="pointer-events-none absolute right-2.5 bottom-2.5 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-ink opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-        <Expand className="h-4 w-4" aria-hidden="true" />
+      {/* подпись: на широких карточках всегда, на остальных — при наведении/фокусе */}
+      <span
+        className={`pointer-events-none absolute inset-x-2 bottom-2 flex items-end justify-between gap-2 transition-opacity duration-300 ${
+          wide ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+        }`}
+      >
+        <span className="line-clamp-2 rounded-2xl bg-white/92 px-3 py-1.5 text-left text-[12.5px] leading-snug font-bold text-ink shadow-sm">
+          {label}
+        </span>
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sun text-ink shadow-sm">
+          <Expand className="h-4 w-4" aria-hidden="true" />
+        </span>
       </span>
     </button>
   );
@@ -160,65 +234,93 @@ function MobileStrip({ onOpen }: { onOpen: (i: number) => (e: React.MouseEvent<H
   const strip = useRef<HTMLUListElement>(null);
   const [current, setCurrent] = useState(0);
 
+  // активный слайд — тот, чей центр ближе к центру ленты
   const onScroll = () => {
     const el = strip.current;
-    if (!el || !el.firstElementChild) return;
-    const w = (el.firstElementChild as HTMLElement).offsetWidth + 12;
-    setCurrent(Math.min(items.length - 1, Math.round(el.scrollLeft / w)));
+    if (!el) return;
+    const mid = el.scrollLeft + el.clientWidth / 2;
+    let best = 0;
+    let dist = Infinity;
+    Array.from(el.children).forEach((c, i) => {
+      const li = c as HTMLElement;
+      const d = Math.abs(li.offsetLeft + li.offsetWidth / 2 - mid);
+      if (d < dist) {
+        dist = d;
+        best = i;
+      }
+    });
+    setCurrent(best);
   };
-  const scrollBy = (dir: 1 | -1) => {
+  const goTo = (i: number) => {
     const el = strip.current;
-    if (!el || !el.firstElementChild) return;
-    const w = (el.firstElementChild as HTMLElement).offsetWidth + 12;
-    el.scrollBy({ left: dir * w, behavior: "smooth" });
+    const li = el?.children[i] as HTMLElement | undefined;
+    if (!el || !li) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollTo({ left: li.offsetLeft - (el.clientWidth - li.offsetWidth) / 2, behavior: reduce ? "auto" : "smooth" });
   };
 
   return (
-    <div className="mt-6 md:hidden">
+    <div data-float-avoid className="mt-6 md:hidden">
+      {/* одинаковая высота, ширина — по пропорциям фото (не шире экрана) */}
       <ul
         ref={strip}
         onScroll={onScroll}
-        className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 [scroll-padding-inline:16px] sm:-mx-6 sm:px-6"
+        className="no-scrollbar -mx-4 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto overscroll-x-contain px-4 py-1 sm:-mx-6 sm:px-6"
       >
         {items.map((item, i) => {
           const label =
             item.kind === "photo"
               ? (photoCaption(item.photo, lang) ?? `${t.gallery.photo} ${i + 1}`)
               : t.gallery.video;
+          const ratio = item.kind === "photo" ? item.photo.width / item.photo.height : 4 / 5;
           return (
-            <li key={tileKey(item)} className="w-[78%] max-w-[340px] shrink-0 snap-start">
+            <li
+              key={tileKey(item)}
+              className="h-[clamp(240px,min(46svh,88vw),360px)] max-w-[calc(100vw-48px)] shrink-0 snap-center"
+              style={{ aspectRatio: String(ratio) }}
+            >
               <button
                 type="button"
                 onClick={onOpen(i)}
                 aria-label={`${t.gallery.open}: ${label}`}
-                className="relative block aspect-[4/5] w-full overflow-hidden rounded-[24px] bg-cream-deep ring-4 ring-white"
+                className="relative block h-full w-full overflow-hidden rounded-[24px] bg-cream-deep ring-4 ring-white"
               >
                 {item.kind === "photo" ? (
-                  <Image
-                    src={item.photo.src}
-                    alt={label}
-                    fill
-                    quality={70}
-                    sizes="80vw"
-                    className="object-cover"
-                  />
+                  <Image src={item.photo.src} alt={label} fill quality={70} sizes="(max-width: 767px) 90vw, 1px" className="object-cover" />
                 ) : (
                   <VideoPoster video={item.video} fill />
                 )}
+                <span className="pointer-events-none absolute inset-x-2 bottom-2 flex">
+                  <span className="line-clamp-2 rounded-2xl bg-white/92 px-2.5 py-1 text-left text-[12px] leading-snug font-bold text-ink shadow-sm">
+                    {label}
+                  </span>
+                </span>
               </button>
             </li>
           );
         })}
       </ul>
+
       {items.length > 1 ? (
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="font-hand text-[20px] leading-none font-bold text-ink-soft">
-            {current + 1} {t.gallery.of} {items.length} · {t.gallery.swipeHint}
-          </span>
-          <div className="flex gap-2">
+          <div className="min-w-0">
+            <p className="font-hand text-[20px] leading-none font-bold text-ink-soft" aria-live="polite">
+              {current + 1} {t.gallery.of} {items.length}
+              <span className="max-[359px]:hidden"> · {t.gallery.swipeHint}</span>
+            </p>
+            <div aria-hidden="true" className="mt-2 flex flex-wrap gap-1.5">
+              {items.map((item, i) => (
+                <span
+                  key={tileKey(item)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? "w-5 bg-sun-deep" : "w-1.5 bg-line"}`}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
             <button
               type="button"
-              onClick={() => scrollBy(-1)}
+              onClick={() => goTo(current - 1)}
               disabled={current === 0}
               aria-label={t.gallery.prev}
               className="grid h-11 w-11 place-items-center rounded-full bg-white text-ink shadow-sm disabled:opacity-40"
@@ -227,7 +329,7 @@ function MobileStrip({ onOpen }: { onOpen: (i: number) => (e: React.MouseEvent<H
             </button>
             <button
               type="button"
-              onClick={() => scrollBy(1)}
+              onClick={() => goTo(current + 1)}
               disabled={current >= items.length - 1}
               aria-label={t.gallery.next}
               className="grid h-11 w-11 place-items-center rounded-full bg-sun text-ink shadow-sm disabled:opacity-40"
@@ -363,7 +465,7 @@ function Lightbox({
               sizes="100vw"
               className="object-contain"
               draggable={false}
-              priority
+              loading="eager"
             />
           ) : (
             <video

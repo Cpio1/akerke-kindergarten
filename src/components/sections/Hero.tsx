@@ -40,7 +40,7 @@ export function Hero() {
         <Flower petal="#e4dcff" />
       </Deco>
 
-      <div className="container-x grid w-full items-center gap-x-12 gap-y-5 [grid-template-areas:'head'_'visual'_'body'] lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-y-6 lg:[grid-template-areas:'head_visual'_'body_visual']">
+      <div className={`container-x grid w-full items-center gap-x-12 gap-y-5 [grid-template-areas:'head'_'visual'_'body'] ${heroPhoto ? "lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]" : "lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]"} lg:gap-y-6 lg:[grid-template-areas:'head_visual'_'body_visual']`}>
         {/* Заголовок */}
         <div className="[grid-area:head] lg:self-end">
           <p className="reveal inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-[13px] font-bold text-ink-soft shadow-[0_2px_0_rgba(43,42,58,0.06)] sm:text-[14px]">
@@ -59,7 +59,9 @@ export function Hero() {
         </div>
 
         {/* Визуал */}
-        <div className="relative mx-auto w-full max-w-[540px] [grid-area:visual] lg:max-w-[460px]">
+        <div
+          className={`relative mx-auto w-full max-w-[540px] [grid-area:visual] ${heroPhoto ? "lg:max-w-[620px]" : "lg:max-w-[460px]"}`}
+        >
           <HeroVisual />
         </div>
 
@@ -120,33 +122,81 @@ export function Hero() {
 }
 
 function HeroVisual() {
+  return heroPhoto ? <PhotoFrame photo={heroPhoto} /> : <IllustrationFrame />;
+}
+
+/**
+ * Рамка-«открытка» для реального фото main-page.
+ * Пропорция 3:2 близка к оригиналу (≈5:3), поэтому кадр почти не обрезается.
+ */
+function PhotoFrame({ photo }: { photo: NonNullable<typeof heroPhoto> }) {
+  const t = useT();
+  return (
+    <figure className="reveal relative m-0 px-2 pt-4 pb-3 sm:px-4 lg:px-6 lg:pt-6" style={{ ["--d" as string]: "120ms" }}>
+      {/* цветные подложки */}
+      <div aria-hidden="true" className="absolute inset-x-3 top-7 bottom-6 rotate-[3deg] rounded-[34px] bg-sky-mid sm:inset-x-6 lg:inset-x-8" />
+      <div aria-hidden="true" className="dots-bg absolute inset-x-6 top-2 bottom-10 -rotate-[4deg] rounded-[34px] bg-sun-soft opacity-90 sm:inset-x-10" />
+
+      {/* сама открытка */}
+      <div className="relative rotate-[-1.2deg] rounded-[30px] bg-white p-[6px] shadow-[0_26px_50px_-26px_rgba(29,90,143,0.55)] transition-transform duration-500 hover:rotate-0 sm:p-2 lg:rounded-[36px]">
+        <div className="relative aspect-[3/2] overflow-hidden rounded-[24px] bg-sky lg:rounded-[29px]">
+          <Image
+            src={photo.src}
+            alt={t.hero.photoAlt}
+            fill
+            preload
+            quality={80}
+            sizes="(min-width: 1240px) 600px, (min-width: 1024px) 48vw, (min-width: 640px) 540px, calc(100vw - 48px)"
+            className="object-cover object-[50%_45%]"
+          />
+        </div>
+        {/* «скотч» по углам */}
+        <span aria-hidden="true" className="absolute -top-3 left-8 h-6 w-20 -rotate-6 rounded-[4px] bg-coral/70 shadow-sm" />
+        <span aria-hidden="true" className="absolute -top-3 right-10 h-6 w-16 rotate-[8deg] rounded-[4px] bg-sun/80 shadow-sm" />
+      </div>
+
+      <figcaption className="relative mx-auto -mt-4 w-fit max-w-[90%] rotate-[1deg] rounded-full bg-ink px-4 py-1.5 text-center text-[12.5px] font-bold text-white shadow-[0_4px_0_rgba(43,42,58,0.15)] sm:text-[13.5px]">
+        {t.hero.photoCaption}
+      </figcaption>
+
+      {/* стикеры и фигурки — по краям, не на лицах */}
+      <span
+        aria-hidden="true"
+        className="absolute -top-1 -right-1 grid h-16 w-16 rotate-12 place-items-center rounded-full bg-coral text-center font-display text-[12.5px] leading-tight font-bold text-white shadow-[0_4px_0_#e85a4a] sm:h-[72px] sm:w-[72px] sm:text-[14px] lg:-top-2 lg:-right-3"
+      >
+        {t.hero.sticker}
+      </span>
+      <span
+        aria-hidden="true"
+        className="absolute bottom-10 -left-5 hidden -rotate-6 rounded-xl bg-white px-3 py-1 font-hand text-[26px] leading-none font-bold text-lav-deep shadow-[0_3px_0_rgba(43,42,58,0.08)] xl:block"
+      >
+        {t.hero.note}
+      </span>
+      <Deco className="-top-4 left-0 w-9 motion-safe:animate-float sm:w-11 lg:-top-5 lg:-left-3 lg:w-12">
+        <Sun />
+      </Deco>
+      <Deco className="right-4 -bottom-2 hidden w-14 sm:block lg:right-6 lg:w-16">
+        <Rainbow />
+      </Deco>
+      <Deco className="top-1/2 -right-3 hidden w-4 motion-safe:animate-twinkle lg:block">
+        <Sparkle fill="#7c62d8" />
+      </Deco>
+    </figure>
+  );
+}
+
+/** Запасной вариант без фото: иллюстрация в арочной рамке. */
+function IllustrationFrame() {
   const t = useT();
   return (
     <div className="reveal relative px-3 pt-3 pb-4 sm:px-5" style={{ ["--d" as string]: "120ms" }}>
-      {/* смещённая цветная подложка */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-3 top-6 -bottom-0 translate-x-2.5 rounded-[36px] bg-sky-mid sm:inset-x-5 lg:translate-x-4 lg:rounded-t-[999px] lg:rounded-b-[44px]"
+        className="absolute inset-x-3 top-6 bottom-0 translate-x-2.5 rounded-[36px] bg-sky-mid sm:inset-x-5 lg:translate-x-4 lg:rounded-t-[999px] lg:rounded-b-[44px]"
       />
-      {/* рамка-арка */}
-      <div className="relative aspect-[16/11] max-h-[36svh] w-full overflow-hidden rounded-[30px] sm:max-h-[42svh] border-[6px] border-white bg-sky shadow-[0_24px_50px_-24px_rgba(29,90,143,0.45)] sm:aspect-[16/10] lg:aspect-[4/5] lg:max-h-[min(62svh,560px)] lg:rounded-t-[999px] lg:rounded-b-[40px] lg:border-[8px]">
-        {heroPhoto ? (
-          <Image
-            src={heroPhoto.src}
-            alt={t.hero.photoAlt}
-            width={heroPhoto.width}
-            height={heroPhoto.height}
-            priority
-            quality={80}
-            sizes="(min-width: 1024px) 460px, (min-width: 640px) 540px, 100vw"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <KindergartenScene label={t.hero.illustrationLabel} className="h-full w-full" />
-        )}
+      <div className="relative aspect-[16/11] max-h-[36svh] w-full overflow-hidden rounded-[30px] border-[6px] border-white bg-sky shadow-[0_24px_50px_-24px_rgba(29,90,143,0.45)] sm:aspect-[16/10] sm:max-h-[42svh] lg:aspect-[4/5] lg:max-h-[min(62svh,560px)] lg:rounded-t-[999px] lg:rounded-b-[40px] lg:border-[8px]">
+        <KindergartenScene label={t.hero.illustrationLabel} className="h-full w-full" />
       </div>
-
-      {/* стикеры и фигурки вокруг рамки */}
       <span
         aria-hidden="true"
         className="absolute -top-1 right-1 grid h-[68px] w-[68px] rotate-12 place-items-center rounded-full bg-coral text-center font-display text-[13px] leading-tight font-bold text-white shadow-[0_4px_0_#e85a4a] sm:h-20 sm:w-20 sm:text-[15px] lg:top-10 lg:-right-2"

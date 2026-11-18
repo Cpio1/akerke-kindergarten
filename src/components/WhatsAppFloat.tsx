@@ -8,7 +8,7 @@ import { WhatsAppIcon } from "@/components/ui/BrandIcons";
 /**
  * Плавающая кнопка WhatsApp.
  * Скрыта на первом экране (там своя кнопка), при открытом меню/галерее
- * и над подвалом — чтобы ничего не перекрывать.
+ * над галереей (элементы с data-float-avoid) и над подвалом — чтобы ничего не перекрывать.
  */
 export function WhatsAppFloat() {
   const t = useT();
@@ -21,7 +21,14 @@ export function WhatsAppFloat() {
       const contacts = document.getElementById("contacts");
       const nearFooter = contacts ? contacts.getBoundingClientRect().top < window.innerHeight * 0.55 : false;
       const overlay = document.body.dataset.menu === "open" || document.body.dataset.lightbox === "open";
-      setShow(pastHero && !nearFooter && !overlay);
+      // не перекрываем фотографии и элементы управления галереи
+      const zoneTop = window.innerHeight - 96;
+      const zoneLeft = window.innerWidth - 96;
+      const overPhotos = Array.from(document.querySelectorAll<HTMLElement>("[data-float-avoid]")).some((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.bottom > zoneTop && r.top < window.innerHeight && r.right > zoneLeft;
+      });
+      setShow(pastHero && !nearFooter && !overlay && !overPhotos);
     };
     update();
     window.addEventListener("scroll", update, { passive: true });
