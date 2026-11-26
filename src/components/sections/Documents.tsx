@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpRight, Cloud as CloudIcon, FileText, FolderOpen, Link2, Phone } from "lucide-react";
+import { asset } from "@/lib/paths";
 import { useLang, useT } from "@/lib/i18n";
 import { documents, type DocumentSource } from "@/lib/documents";
 import { site, whatsappLink } from "@/lib/site";
@@ -44,7 +45,7 @@ export function Documents() {
               return (
                 <li key={doc.url} className="reveal" style={{ ["--d" as string]: `${i * 60}ms` }}>
                   <a
-                    href={doc.url}
+                    href={asset(doc.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group flex h-full items-center gap-4 rounded-[24px] bg-paper p-4 shadow-[0_2px_0_rgba(43,42,58,0.05)] ring-1 ring-line transition-transform hover:-translate-y-0.5 sm:p-5"

@@ -21,11 +21,8 @@ export const site = {
   twoGisFirmId: "70000001038440091",
 } as const;
 
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000");
+/** Публичный адрес сайта (без завершающего «/»). */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://cpio1.github.io/akerke-kindergarten").replace(/\/$/, "");
 
 export function whatsappLink(text?: string) {
   const base = `https://wa.me/${site.whatsappNumber}`;

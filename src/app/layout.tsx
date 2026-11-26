@@ -28,7 +28,8 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  // Только домен: Next сам добавляет basePath к путям картинок (opengraph-image, иконки).
+  metadataBase: new URL(new URL(SITE_URL).origin),
   title: kk.meta.title,
   description: kk.meta.description,
   applicationName: "С.АҚЕРКЕ",
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
     "Еспаева 80/1",
   ],
   formatDetection: { telephone: false, address: false, email: false },
-  alternates: { canonical: "/" },
+  alternates: { canonical: `${SITE_URL}/` },
   openGraph: {
     title: kk.meta.title,
     description: kk.meta.description,
@@ -52,7 +53,7 @@ export const metadata: Metadata = {
     locale: "kk_KZ",
     alternateLocale: ["ru_RU"],
     type: "website",
-    url: "/",
+    url: `${SITE_URL}/`,
   },
   twitter: { card: "summary_large_image", title: kk.meta.title, description: ru.meta.description },
   robots: { index: true, follow: true },

@@ -1,6 +1,6 @@
 # «С.АҚЕРКЕ» балабақшасы — лендинг
 
-Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Lucide. Готов к деплою на Vercel.
+Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Lucide. Публикуется на GitHub Pages: https://cpio1.github.io/akerke-kindergarten/
 
 ```bash
 npm install
@@ -35,7 +35,14 @@ npm run build    # продакшн-сборка
 Точка взята из карточки организации в 2ГИС: «Акерке, частный детский сад, ТОО С. Ақерке»,
 ул. Еспаева, 80/1, мкр Акбулак (43.255917, 76.827434, firm id `70000001038440091`).
 
-## Vercel
+## GitHub Pages
 
-Задайте `NEXT_PUBLIC_SITE_URL` (например, `https://akerke.kz`) для canonical и Open Graph;
-без неё используется `VERCEL_PROJECT_PRODUCTION_URL`.
+Каждый `git push` в `main` запускает `.github/workflows/deploy.yml`: сборка `npm run build`
+→ статическая папка `out/` → публикация через `actions/deploy-pages`.
+
+- `npm run dev` — локально без префикса: http://localhost:3000/
+- `npm run build` — статический экспорт с префиксом `/akerke-kindergarten` в `out/`.
+- Пути к файлам из `public/` формируются только через `asset()` из `src/lib/paths.ts`
+  (фото из `src/lib/media.ts` уже префиксованы).
+- Для собственного домена: `NEXT_PUBLIC_BASE_PATH=""` и `NEXT_PUBLIC_SITE_URL=https://домен`
+  в шаге сборки workflow.

@@ -112,3 +112,5 @@ export default async function OpengraphImage() {
     },
   );
 }
+
+export const dynamic = "force-static";

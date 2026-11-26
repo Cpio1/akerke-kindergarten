@@ -1,5 +1,6 @@
 import manifest from "@/generated/media.json";
 import type { Lang } from "@/lib/i18n";
+import { asset } from "@/lib/paths";
 
 /**
  * Фотографии подключаются автоматически:
@@ -11,9 +12,15 @@ import type { Lang } from "@/lib/i18n";
 export type Photo = { name: string; src: string; width: number; height: number };
 export type Video = { src: string; poster: string | null };
 
-export const heroPhoto = manifest.hero as Photo | null;
-export const heroVideo = manifest.video as Video | null;
-export const galleryPhotos = manifest.gallery as Photo[];
+// Пути из манифеста («/gallery/…») получают префикс basePath здесь — один раз.
+const withBase = (p: Photo): Photo => ({ ...p, src: asset(p.src) });
+const rawVideo = manifest.video as Video | null;
+
+export const heroPhoto = manifest.hero ? withBase(manifest.hero as Photo) : null;
+export const heroVideo: Video | null = rawVideo
+  ? { src: asset(rawVideo.src), poster: rawVideo.poster ? asset(rawVideo.poster) : null }
+  : null;
+export const galleryPhotos = (manifest.gallery as Photo[]).map(withBase);
 
 /** Подписи к фотографиям по имени файла (необязательно). */
 const captions: Record<string, Record<Lang, string>> = {
